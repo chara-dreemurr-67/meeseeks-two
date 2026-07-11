@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "discord.js": "^14.26.5",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.0",
+    "typescript": "^7.0.2"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "tsx main.ts",
+    "deploy": "tsx DeployCommands.ts"
+  }
+}
