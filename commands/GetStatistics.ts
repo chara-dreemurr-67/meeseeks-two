@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, User, EmbedBuilder, Faces, MessageFlags } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, User, EmbedBuilder, MessageFlags } from "discord.js";
 import { Command } from "../types/Command";
 import { MeeseeksLeaderboard, Players, RoleRewards } from "../types/MeeseeksLeaderboard";
 import FetchMeeseeksAPI from "../helpers/FetchMeeseeksAPI";
@@ -14,6 +14,7 @@ interface LookForResult {
      * True = found, False = not found;
      */
     Status: boolean;
+    ServerName?: string;
     Reason?: FailedReasons;
     RoleRewards?: RoleRewards[];
     EXPPerMessage?: [number, number];
@@ -47,6 +48,7 @@ const LookForPlayer = async (User: string, ServerID: string): Promise<LookForRes
             Output.Status = true;
             Output.Player = Leaderboard.players[PlayerIndex];
             Output.Rank = PlayerIndex + i * 1000 + 1;
+            Output.ServerName = Leaderboard.guild.name;
             break;
         }
 
@@ -80,38 +82,28 @@ const FormatDuration = (MS: number, IncludeSlashes: boolean = false) => {
 };
 const Average = (...Numbers: number[]): number => Numbers.reduce((Total: number, Num: number): number => Total + Num, 0) / Numbers.length;
 const GetStatistcString = (Statistic: LookForResult) => {
+    /**
+     * This will also never run.
+     */
     if(!Statistic.Player || !Statistic.Rank || !Statistic.Top1EXP || !Statistic.EXPPerMessage) 
         return "";
+
+    const CurrentEXP: number = Statistic.Player.detailed_xp[0];
+    const NextLevel: number = Statistic.Player.detailed_xp[1];
+    const ToNextLevel: number = NextLevel - CurrentEXP;
+    const MessagesLeft: number = Math.ceil(ToNextLevel / Average(...Statistic.EXPPerMessage));
     
-    return `${
-        Statistic.Player.username
-    }, RANK #${
-        Statistic.Rank
-    } LEVEL ${
-        Statistic.Player.level
-    }, ${
-        Statistic.Player.detailed_xp[0]
-    }/${
-        Statistic.Player.detailed_xp[1]
-    } EXP ${
-        ((Statistic.Player.detailed_xp[0] / Statistic.Player.detailed_xp[1]) * 100).toFixed(2)
-    }%, Total EXP: ${
-        Statistic.Player.xp
-    }, Total msg: ${
-        Statistic.Player.message_count
-    }, Time spent: ${
-        FormatDuration(Statistic.Player.message_count * 60000, true)
-    }, ${
-        Statistic.Player.detailed_xp[1] - Statistic.Player.detailed_xp[0]
-    } EXP of ${
-        Math.ceil((Statistic.Player.detailed_xp[1] - Statistic.Player.detailed_xp[0]) / Average(...Statistic.EXPPerMessage))
-    } messages left till LEVEL ${
-        Statistic.Player.level + 1
-    }, ${
-        ((Statistic.Player.xp / Statistic.Top1EXP.xp) * 100).toFixed(2)
-    }% of ${
-        Statistic.Top1EXP.username
-    }`;
+    return (
+        `${Statistic.Player.username}, ` +
+        `RANK #${Statistic.Rank} LEVEL ${Statistic.Player.level}, ` +
+        `${CurrentEXP}/${NextLevel} EXP ` +
+        `${((CurrentEXP / NextLevel) * 100).toFixed(2)}%, ` +
+        `Total EXP: ${Statistic.Player.xp}, Total msg: ${Statistic.Player.message_count}, ` +
+        `Time spent: ${FormatDuration(Statistic.Player.message_count * 60000, true)}, ` +
+        `${ToNextLevel} EXP of ` +
+        `${MessagesLeft} message${MessagesLeft > 1 ? "s" : ""} left till LEVEL ${Statistic.Player.level + 1}, ` +
+        `${((Statistic.Player.xp / Statistic.Top1EXP.xp) * 100).toFixed(2)}% of ${Statistic.Top1EXP.username}`
+    );
 };
 
 export default {
@@ -127,7 +119,7 @@ export default {
         .addStringOption(Option => 
             Option
                 .setName("where")
-                .setDescription("Server to get progress. Default is whatever server you're using the command in.")
+                .setDescription("Server to get progress on. Default is whatever server you're using the command in.")
                 .setRequired(false)
         )
         .addBooleanOption(Option => 
@@ -139,12 +131,18 @@ export default {
     ,
     Action: async (Interaction: ChatInputCommandInteraction): Promise<void> => {
         const Who: User = Interaction.options.getUser("who", false) ?? Interaction.user;
-        const Where: string | undefined = Interaction.options.getString("where", false) ?? Interaction.guild?.id;
+        const Where: string | null = Interaction.options.getString("where", false) ?? Interaction.guildId;
+        const IsEphemeral: boolean = Interaction.options.getBoolean("ephemeral", false) ?? true;
+
+        await Interaction.deferReply({
+            flags: IsEphemeral ? MessageFlags.Ephemeral : undefined
+        });
+
         if(!Where) {
-            await Interaction.reply({ content: "No server specified!", allowedMentions: { repliedUser: false }});
+            await Interaction.editReply({ content: "No server specified!", allowedMentions: { repliedUser: false }});
             return;
         }
-
+        
         const Result: LookForResult = await LookForPlayer(Who.id, Where);
         if(!Result.Status) {
             let ErrorMessage: string;
@@ -161,35 +159,51 @@ export default {
                     break;
             }
 
-            await Interaction.reply({ content: ErrorMessage, allowedMentions: { repliedUser: false }, flags: MessageFlags.Ephemeral });
+            await Interaction.editReply({ content: ErrorMessage, allowedMentions: { repliedUser: false } });
             return;
         }
 
-        if(!Result.Player || !Result.Rank || !Result.RoleRewards || !Result.Top1EXP) {
-            await Interaction.reply({ content: "Something went wrong, please try again later.", allowedMentions: { repliedUser: false }, flags: MessageFlags.Ephemeral });
+        /**
+         * Technically this if statement will never run but typescript won't stop harassing if it's not here so it has to be here.
+         */
+        if(!Result.Player || !Result.Rank || !Result.RoleRewards || !Result.Top1EXP || !Result.ServerName) {
+            await Interaction.editReply({ content: "How does this even happened.", allowedMentions: { repliedUser: false } });
             return;
         }
 
-        let Color: number = 0xffffff;
-        for(const Reward of Result.RoleRewards) {
-            if(Reward.rank >= Result.Player.level) {
-                Color = Reward.role.color;
-                break;
-            }
-        }
-
-        const LevelPercentage: number = Result.Player.detailed_xp[0] / Result.Player.detailed_xp[1];
-        const ToTop1Percentage: number = Result.Player.xp / Result.Top1EXP.xp;
+        const Player: Players = Result.Player;
+        const Top1: Players = Result.Top1EXP;
+        const RoleRewards: RoleRewards[] = Result.RoleRewards;
+        
+        const Index: number = RoleRewards.findIndex(Reward => Reward.rank > Player.level) - 1;
+        const Color: number = Player.level < RoleRewards[0].rank || !RoleRewards.length 
+            ? 0xffffff 
+            : RoleRewards[
+                Index !== -2 ? Index : RoleRewards.length - 1
+            ].role.color
+        ;
+        const LevelPercentage: number = Player.detailed_xp[0] / Player.detailed_xp[1];
+        const ToTop1Percentage: number = Player.xp / Top1.xp;
 
         const Embed: EmbedBuilder = new EmbedBuilder()
             .setColor(Color)
             .setAuthor({
-                name: Result.Player.username,
+                name: Player.username,
+                url: `https://discord.com/users/${Player.id}`,
                 iconURL: Who.displayAvatarURL({ size: 256 })
             })
             .setThumbnail(Who.displayAvatarURL({ size: 512 }))
-            .setTitle(`Level ${Result.Player.level}`)
+            .setTitle(Result.ServerName)
+            .setDescription(
+                `Total messages: ${Player.message_count}, ` +
+                `Time spent: ${FormatDuration(Player.message_count * 600000)}`
+            )
             .addFields(
+                {
+                    name: "Level",
+                    value: Player.level.toLocaleString(),
+                    inline: true
+                },
                 {
                     name: "Rank",
                     value: `#${Result.Rank}`,
@@ -197,34 +211,27 @@ export default {
                 },
                 {
                     name: "Total EXP",
-                    value: Result.Player.xp.toLocaleString(),
+                    value: Player.xp.toLocaleString(),
                     inline: true
                 },
                 {
-                    name: "Progress to next level",
+                    name: `Progress to level ${Player.level + 1}`,
                     value:
                         `\`${ProgressBar(LevelPercentage)}\` ${(LevelPercentage * 100).toFixed(2)}%\n` +
-                        `${Result.Player.detailed_xp[0].toLocaleString()} / ${Result.Player.detailed_xp[1].toLocaleString()} EXP\n`
+                        `${Player.detailed_xp[0].toLocaleString()} / ${Player.detailed_xp[1].toLocaleString()} EXP\n`
                 },
                 {
-                    name: `Progress to #1 (${Result.Top1EXP.username})`,
+                    name: `Progress to #1 (${Top1.username})`,
                     value:
                         `\`${ProgressBar(ToTop1Percentage)}\` ${(ToTop1Percentage * 100).toFixed(2)}%\n` +
-                        `${Result.Player.xp.toLocaleString()} / ${Result.Top1EXP.xp.toLocaleString()} EXP\n` 
+                        `${Player.xp.toLocaleString()} / ${Top1.xp.toLocaleString()} EXP\n` 
                 },
                 {
                     name: "Statistic",
-                    value: `\`\`\`\n${GetStatistcString(Result)}\n\`\`\``
+                    value: "```\n" + GetStatistcString(Result) + "\n```"
                 }
             )
-            .setFooter({
-                text: `Total messages: ${Result.Player.message_count}, Time spent: ${FormatDuration(Result.Player.message_count * 600000)}`
-            })
         ;
-        
-        await Interaction.deferReply({
-            flags: Interaction.options.getBoolean("ephemeral", false) ? MessageFlags.Ephemeral : undefined
-        })
 
         await Interaction.editReply({ 
             embeds: [Embed],
