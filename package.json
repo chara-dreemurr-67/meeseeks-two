@@ -11,6 +11,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx main.ts",
+    "start": "node public/main.js",
     "deployTest": "tsx DeployCommandsT.ts",
     "deploy": "tsx DeployCommands.ts",
     "build": "tsc"
