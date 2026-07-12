@@ -1,7 +1,7 @@
 import { Client as C, GatewayIntentBits, Events } from "discord.js";
-import { Command } from "./types/Command";
+import type { Command } from "./types/Command.js";
 import dotenv from "dotenv";
-import CommandRegistry from "./LoadCommands";
+import CommandRegistry from "./LoadCommands.js";
 
 dotenv.config();
 

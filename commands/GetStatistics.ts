@@ -1,7 +1,8 @@
+"use strict";
 import { ChatInputCommandInteraction, SlashCommandBuilder, User, EmbedBuilder, MessageFlags } from "discord.js";
-import { Command } from "../types/Command";
-import { MeeseeksLeaderboard, Players, RoleRewards } from "../types/MeeseeksLeaderboard";
-import FetchMeeseeksAPI from "../helpers/FetchMeeseeksAPI";
+import type { Command } from "../types/Command.js";
+import type { MeeseeksLeaderboard, Players, RoleRewards } from "../types/MeeseeksLeaderboard.js";
+import FetchMeeseeksAPI from "../helpers/FetchMeeseeksAPI.js";
 import timers from "timers/promises";
 
 enum FailedReasons {
@@ -35,7 +36,7 @@ const LookForPlayer = async (User: string, ServerID: string): Promise<LookForRes
             break;
         }
 
-        const Leaderboard: MeeseeksLeaderboard = await Res.json();
+        const Leaderboard: MeeseeksLeaderboard = await Res.json() as MeeseeksLeaderboard;
         if(i === 0) {
             Output.Top1EXP = Leaderboard.players[0];
             Output.RoleRewards = Leaderboard.role_rewards;
@@ -66,7 +67,7 @@ const ProgressBar = (Percent: number, Length: number = 20) => {
     const Filled: number = Math.round(Percent * Length);
     return "█".repeat(Filled) + "░".repeat(Length - Filled);
 };
-const GetTotalExp = (Level: number) => (5 * (91 + Level + 27 * Level ** 2 + 2 * Level ** 3)) / 6;
+// const GetTotalExp = (Level: number) => (5 * (91 + Level + 27 * Level ** 2 + 2 * Level ** 3)) / 6;
 const FormatDuration = (MS: number, IncludeSlashes: boolean = false) => {
     const TotalSeconds = Math.floor(MS / 1000);
 
@@ -75,10 +76,12 @@ const FormatDuration = (MS: number, IncludeSlashes: boolean = false) => {
     const Minutes = Math.floor((TotalSeconds % 3600) / 60);
     const Seconds = TotalSeconds % 60;
 
-    return `${String(Days).padStart(2, '0')}${IncludeSlashes ? "\\" : ""}:` +
-           `${String(Hours).padStart(2, '0')}${IncludeSlashes ? "\\" : ""}:` +
-           `${String(Minutes).padStart(2, '0')}${IncludeSlashes ? "\\" : ""}:` +
-           `${String(Seconds).padStart(2, '0')}`;
+    return (
+        `${String(Days).padStart(2, '0')}${IncludeSlashes ? "\\" : ""}:` +
+        `${String(Hours).padStart(2, '0')}${IncludeSlashes ? "\\" : ""}:` +
+        `${String(Minutes).padStart(2, '0')}${IncludeSlashes ? "\\" : ""}:` +
+        `${String(Seconds).padStart(2, '0')}`
+    );
 };
 const Average = (...Numbers: number[]): number => Numbers.reduce((Total: number, Num: number): number => Total + Num, 0) / Numbers.length;
 const GetStatistcString = (Statistic: LookForResult) => {
@@ -105,6 +108,8 @@ const GetStatistcString = (Statistic: LookForResult) => {
         `${((Statistic.Player.xp / Statistic.Top1EXP.xp) * 100).toFixed(2)}% of ${Statistic.Top1EXP.username}`
     );
 };
+
+const Cooldowns: Record<string, number> = {};
 
 export default {
     Command: new SlashCommandBuilder()
@@ -138,11 +143,24 @@ export default {
             flags: IsEphemeral ? MessageFlags.Ephemeral : undefined
         });
 
+        const CDEnds: number = Cooldowns[Interaction.user.id];
+        const Now: number = Date.now();
+        if(CDEnds && CDEnds > Now) {
+            const Remaining: string = ((CDEnds - Now) / 1000).toFixed(1);
+            await Interaction.editReply({
+                content: `Please wait ${Remaining}s before using this command again.`,
+            });
+            return;
+        }
+
         if(!Where) {
             await Interaction.editReply({ content: "No server specified!", allowedMentions: { repliedUser: false }});
             return;
         }
         
+        Cooldowns[Interaction.user.id] = Date.now() + 7500;
+        setTimeout(() => delete Cooldowns[Interaction.user.id], 7500);
+
         const Result: LookForResult = await LookForPlayer(Who.id, Where);
         if(!Result.Status) {
             let ErrorMessage: string;
@@ -176,7 +194,7 @@ export default {
         const RoleRewards: RoleRewards[] = Result.RoleRewards;
         
         const Index: number = RoleRewards.findIndex(Reward => Reward.rank > Player.level) - 1;
-        const Color: number = Player.level < RoleRewards[0].rank || !RoleRewards.length 
+        const Color: number = Player.level < (RoleRewards.at(0)?.rank ?? -1) || !RoleRewards.length 
             ? 0xffffff 
             : RoleRewards[
                 Index !== -2 ? Index : RoleRewards.length - 1

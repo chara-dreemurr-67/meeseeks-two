@@ -1,5 +1,5 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
-import { Command } from "../types/Command";
+import type { Command } from "../types/Command.js";
 
 export default {
     Command: new SlashCommandBuilder().setName("ping").setDescription("Check if the bot is alive or not."),
