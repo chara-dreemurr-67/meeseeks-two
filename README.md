@@ -21,12 +21,15 @@ npm run build
 ```
 
 ### After Building
-1. Create a file named ".env" and put it in public/ (or whatever folder the main.js file is in but it should be public/ by default). Add "DISCORD_TOKEN=YOUR_DISCORD_TOKEN" into the .env file and save it.
+1. Create a file named ".env" and put it in public/ (or whatever folder the main.js file is in but it should be public/ by default). the file should look something like this:
+```txt
+DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
+```
 2. To start the build:
 ```bash
 npm run start
 ```
-Alternatively, run without building:
+3. Alternatively, run without building:
 ```bash
 npm run dev
 ```
