@@ -147,14 +147,22 @@ export default {
         const Now: number = Date.now();
         if(CDEnds && CDEnds > Now) {
             const Remaining: string = ((CDEnds - Now) / 1000).toFixed(1);
-            await Interaction.editReply({
+            await Interaction.deleteReply().catch(() => {});
+            await Interaction.followUp({
                 content: `Please wait ${Remaining}s before using this command again.`,
+                allowedMentions: { repliedUser: false },
+                flags: MessageFlags.Ephemeral
             });
             return;
         }
 
         if(!Where) {
-            await Interaction.editReply({ content: "No server specified!", allowedMentions: { repliedUser: false }});
+            await Interaction.deleteReply().catch(() => {});
+            await Interaction.followUp({
+                content: `No server specified!`,
+                allowedMentions: { repliedUser: false },
+                flags: MessageFlags.Ephemeral
+            });
             return;
         }
         
@@ -177,22 +185,35 @@ export default {
                     break;
             }
 
-            await Interaction.editReply({ content: ErrorMessage, allowedMentions: { repliedUser: false } });
+            await Interaction.deleteReply().catch(() => {});
+            await Interaction.followUp({
+                content: ErrorMessage,
+                allowedMentions: { repliedUser: false },
+                flags: MessageFlags.Ephemeral
+            });
             return;
         }
 
         /**
          * Technically this if statement will never run but typescript won't stop harassing if it's not here so it has to be here.
          */
-        if(!Result.Player || !Result.Rank || !Result.RoleRewards || !Result.Top1EXP || !Result.ServerName) {
-            await Interaction.editReply({ content: "How does this even happened.", allowedMentions: { repliedUser: false } });
+        if(!Result.Player || !Result.Rank || !Result.RoleRewards || !Result.Top1EXP || !Result.ServerName || !Result.EXPPerMessage) {
+            await Interaction.deleteReply().catch(() => {});
+            await Interaction.followUp({
+                content: "How does this even happened.",
+                allowedMentions: { repliedUser: false },
+                flags: MessageFlags.Ephemeral
+            });
             return;
         }
 
         const Player: Players = Result.Player;
         const Top1: Players = Result.Top1EXP;
         const RoleRewards: RoleRewards[] = Result.RoleRewards;
-        
+        const CurrentEXP: number = Result.Player.detailed_xp[0];
+        const NextLevel: number = Result.Player.detailed_xp[1];
+        const ToNextLevel: number = NextLevel - CurrentEXP;
+
         const Index: number = RoleRewards.findIndex(Reward => Reward.rank > Player.level) - 1;
         const Color: number = Player.level < (RoleRewards.at(0)?.rank ?? -1) || !RoleRewards.length 
             ? 0xffffff 
@@ -200,8 +221,9 @@ export default {
                 Index !== -2 ? Index : RoleRewards.length - 1
             ].role.color
         ;
-        const LevelPercentage: number = Player.detailed_xp[0] / Player.detailed_xp[1];
+        const LevelPercentage: number = CurrentEXP / NextLevel;
         const ToTop1Percentage: number = Player.xp / Top1.xp;
+        const MessagesLeft: number = Math.ceil(ToNextLevel / Average(...Result.EXPPerMessage));
 
         const Embed: EmbedBuilder = new EmbedBuilder()
             .setColor(Color)
@@ -236,13 +258,14 @@ export default {
                     name: `Progress to level ${Player.level + 1}`,
                     value:
                         `\`${ProgressBar(LevelPercentage)}\` ${(LevelPercentage * 100).toFixed(2)}%\n` +
-                        `${Player.detailed_xp[0].toLocaleString()} / ${Player.detailed_xp[1].toLocaleString()} EXP\n`
+                        `${CurrentEXP.toLocaleString()} / ${NextLevel.toLocaleString()} EXP ` +
+                        `(${MessagesLeft} message${MessagesLeft > 1 ? "s" : ""})`
                 },
                 {
                     name: `Progress to #1 (${Top1.username})`,
                     value:
                         `\`${ProgressBar(ToTop1Percentage)}\` ${(ToTop1Percentage * 100).toFixed(2)}%\n` +
-                        `${Player.xp.toLocaleString()} / ${Top1.xp.toLocaleString()} EXP\n` 
+                        `${Player.xp.toLocaleString()} / ${Top1.xp.toLocaleString()} EXP` 
                 },
                 {
                     name: "Statistic",
