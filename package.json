@@ -12,6 +12,7 @@
   "scripts": {
     "dev": "tsx main.ts",
     "deployTest": "tsx DeployCommandsT.ts",
-    "deploy": "tsx DeployCommands.ts"
+    "deploy": "tsx DeployCommands.ts",
+    "build": "tsc"
   }
 }
