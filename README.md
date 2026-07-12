@@ -7,7 +7,7 @@ Massive thanks to [GDjkhp](https://github.com/GDjkhp)'s [meeseeks-leaderboard-ap
 ## Build Instructions
 ### Prerequisites
 1. [Git](https://git-scm.com/). (why are you even on github without git)
-2. [Node.js](https://nodejs.org/en/download). (and also npm but that should comes with node)
+2. [Node.js](https://nodejs.org/en/download). (and also npm but that should come with node, i think)
 3. A [Discord](https://discord.com/developers/applications/) bot token.
 
 ### Build
@@ -21,7 +21,7 @@ npm run build
 ```
 
 ### After Building
-1. Create a file named ".env" and put it in public/ (or whatever folder the main.js file is in but it should be public/ by default). the file should look something like this:
+1. Create a file named ".env" and put it in public/ (or whatever folder the main.js file is in, but it should be public/ by default). The file should look something like this:
 ```txt
 DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
 ```
