@@ -67,7 +67,7 @@ const ProgressBar = (Percent: number, Length: number = 20) => {
     const Filled: number = Math.round(Percent * Length);
     return "█".repeat(Filled) + "░".repeat(Length - Filled);
 };
-const GetTotalExp = (Level: number) => (5 * (91 + Level + 27 * Level ** 2 + 2 * Level ** 3)) / 6;
+const GetTotalExp = (Level: number) => (5 * (91 * Level + 27 * Level ** 2 + 2 * Level ** 3)) / 6;
 const FormatDuration = (MS: number, IncludeSlashes: boolean = false) => {
     const TotalSeconds = Math.floor(MS / 1000);
 
