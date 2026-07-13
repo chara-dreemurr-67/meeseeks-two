@@ -67,7 +67,7 @@ const ProgressBar = (Percent: number, Length: number = 20) => {
     const Filled: number = Math.round(Percent * Length);
     return "█".repeat(Filled) + "░".repeat(Length - Filled);
 };
-// const GetTotalExp = (Level: number) => (5 * (91 + Level + 27 * Level ** 2 + 2 * Level ** 3)) / 6;
+const GetTotalExp = (Level: number) => (5 * (91 + Level + 27 * Level ** 2 + 2 * Level ** 3)) / 6;
 const FormatDuration = (MS: number, IncludeSlashes: boolean = false) => {
     const TotalSeconds = Math.floor(MS / 1000);
 
@@ -213,6 +213,8 @@ export default {
         const CurrentEXP: number = Result.Player.detailed_xp[0];
         const NextLevel: number = Result.Player.detailed_xp[1];
         const ToNextLevel: number = NextLevel - CurrentEXP;
+        const TotalEXP: number = Player.xp;
+        const TotalToNextLevel: number = GetTotalExp(Player.level + 1);
 
         const Index: number = RoleRewards.findIndex(Reward => Reward.rank > Player.level) - 1;
         const Color: number = Player.level < (RoleRewards.at(0)?.rank ?? -1) || !RoleRewards.length 
@@ -222,7 +224,8 @@ export default {
             ].role.color
         ;
         const LevelPercentage: number = CurrentEXP / NextLevel;
-        const ToTop1Percentage: number = Player.xp / Top1.xp;
+        const OverallPercentage: number = TotalEXP / TotalToNextLevel;
+        const ToTop1Percentage: number = TotalEXP / Top1.xp;
         const MessagesLeft: number = Math.ceil(ToNextLevel / Average(...Result.EXPPerMessage));
 
         const Embed: EmbedBuilder = new EmbedBuilder()
@@ -251,7 +254,7 @@ export default {
                 },
                 {
                     name: "Total EXP",
-                    value: Player.xp.toLocaleString(),
+                    value: TotalEXP.toLocaleString(),
                     inline: true
                 },
                 {
@@ -260,6 +263,12 @@ export default {
                         `\`${ProgressBar(LevelPercentage)}\` ${(LevelPercentage * 100).toFixed(2)}%\n` +
                         `${CurrentEXP.toLocaleString()} / ${NextLevel.toLocaleString()} EXP ` +
                         `(${MessagesLeft} message${MessagesLeft > 1 ? "s" : ""})`
+                },
+                {
+                    name: `Overall progress to level ${Player.level + 1}`,
+                    value:
+                        `\`${ProgressBar(OverallPercentage)}\` ${(OverallPercentage * 100).toFixed(2)}%\n` +
+                        `${TotalEXP.toLocaleString()} / ${TotalToNextLevel.toLocaleString()} EXP `
                 },
                 {
                     name: `Progress to #1 (${Top1.username})`,
