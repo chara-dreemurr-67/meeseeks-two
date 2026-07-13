@@ -72,5 +72,4 @@ Client.on(Events.InteractionCreate, async Interaction => {
         }
     }
 });
-console.log(JSON.stringify(process.env.DISCORD_TOKEN));
 Client.login(process.env.DISCORD_TOKEN);
