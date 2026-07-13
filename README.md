@@ -21,15 +21,20 @@ npm run build
 ```
 
 ### After Building
-1. (Optional, skip this step if you're using cloud backend like me) Create a file named ".env" and put it in public/ (or whatever folder the main.js file is in, but it should be public/ by default). The file should look something like this:
+1. Create a file named ".env" and put it in public/ (or whatever folder the main.js file is in, but it should be public/ by default). The file should look something like this:
 ```txt
 DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
+CLIENT_ID=YOUR_BOT_ID
 ```
-2. To start the build:
+2. Register your bot's command:
+```bash
+npm run deploy
+```
+3. To start the build:
 ```bash
 npm run start
 ```
-3. Alternatively, run without building:
+4. Alternatively, run without building:
 ```bash
 npm run dev
 ```
