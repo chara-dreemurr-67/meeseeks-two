@@ -26,7 +26,7 @@ npm run build
 DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
 CLIENT_ID=YOUR_BOT_ID
 ```
-2. Register your bot's command:
+2. Register your bot's command: (Note: rerun this every time you modified the commands' property (name, description, options), or just make it run every time the bot starts)
 ```bash
 npm run deploy
 ```

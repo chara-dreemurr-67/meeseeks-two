@@ -14,4 +14,4 @@ await Rest.put(
     {
         body: [...CommandManager.Values()].map(Command => Command.Command.toJSON())
     }
-); // Global environment
+);
