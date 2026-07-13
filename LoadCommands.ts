@@ -9,6 +9,9 @@ const CommandRegistry: { [CommandName: string]: Command } = {};
 for(const File of CommandFiles) {
     const Command: Command = (await import(`./commands/${File}`)).default;
     CommandRegistry[Command.Command.name] = Command;
+    if(Command.Cancelable) {
+        Command.Command.setDescription(`${Command.Command.description} (Cancelable)`);
+    }
 }
 
 export default CommandRegistry;

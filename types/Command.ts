@@ -2,6 +2,10 @@ import { AutocompleteInteraction, ChatInputCommandInteraction, SlashCommandBuild
 
 export interface Command {
     Command: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
-    Action: (Interaction: ChatInputCommandInteraction) => Promise<void>;
+    Action: (Interaction: ChatInputCommandInteraction, Signal?: AbortSignal) => Promise<void>;
     Autocomplete?: (Interaction: AutocompleteInteraction) => Promise<void>;
+    Cancelable?: {
+        Pool: Map<string, AbortController>;
+        Message?: string;
+    };
 }

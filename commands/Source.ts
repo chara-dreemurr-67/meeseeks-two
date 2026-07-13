@@ -3,12 +3,12 @@ import type { Command } from "../types/Command.js";
 
 export default {
     Command: new SlashCommandBuilder()
-        .setName("ping")
-        .setDescription("Check if the bot is alive or not.")
+        .setName("source")
+        .setDescription("Prints the link to the GitHub repository of this bot.")
     ,
     Action: async (Interaction: ChatInputCommandInteraction): Promise<void> => { 
         await Interaction.reply({ 
-            content: "It is alive!", 
+            content: "https://github.com/chara-dreemurr-67/meeseeks-two", 
             allowedMentions: { repliedUser: false }, 
             flags: MessageFlags.Ephemeral 
         });
