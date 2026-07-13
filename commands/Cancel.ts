@@ -1,6 +1,6 @@
 import { AutocompleteInteraction, ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from "discord.js";
 import type { Command } from "../types/Command.js";
-import CommandRegistry from "../LoadCommands.js";
+import CommandManager from "../CommandManager.js";
 
 const SendMessage = async (Interaction: ChatInputCommandInteraction, Message: string): Promise<void> => {
     await Interaction.reply({
@@ -24,7 +24,7 @@ export default {
     ,
     Action: async (Interaction: ChatInputCommandInteraction): Promise<void> => {
         const Target: string = Interaction.options.getString("command", true);
-        const Command: Command = CommandRegistry[Target];
+        const Command: Command | undefined = CommandManager.Get(Target);
 
         if(!Command) {
             await SendMessage(Interaction, `Command "${Interaction.commandName}" doesn't exist.`);
@@ -48,7 +48,7 @@ export default {
     },
     Autocomplete: async (Interaction: AutocompleteInteraction): Promise<void> => {
         await Interaction.respond(
-            Object.values(CommandRegistry).filter(
+            [...CommandManager.Values()].filter(
                 Command => Command.Cancelable && Command.Cancelable.Pool.has(Interaction.user.id)
             ).map(Command => ({
                 name: Command.Command.name,

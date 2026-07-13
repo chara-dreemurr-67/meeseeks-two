@@ -1,9 +1,10 @@
 import { Client as C, GatewayIntentBits, Events, MessageFlags } from "discord.js";
 import type { Command } from "./types/Command.js";
 import dotenv from "dotenv";
-import CommandRegistry from "./LoadCommands.js";
+import CommandManager from "./CommandManager.js";
 
 dotenv.config();
+await CommandManager.LoadCommands();
 
 const Client: C = new C({
     intents: [
@@ -14,8 +15,8 @@ const Client: C = new C({
 Client.once(Events.ClientReady, Client => console.log(`Logged in as ${Client.user.tag}`));
 Client.on(Events.InteractionCreate, async Interaction => {
     if(Interaction.isAutocomplete()) {
-        const Command: Command = CommandRegistry[Interaction.commandName];
-        if(Command.Autocomplete)
+        const Command: Command | undefined = CommandManager.Get(Interaction.commandName);
+        if(Command && Command.Autocomplete)
             await Command.Autocomplete(Interaction);
         return;
     }
@@ -23,7 +24,7 @@ Client.on(Events.InteractionCreate, async Interaction => {
     if(!Interaction.isChatInputCommand()) 
         return;
 
-    const Command: Command = CommandRegistry[Interaction.commandName];
+    const Command: Command | undefined = CommandManager.Get(Interaction.commandName);
     if(!Command)
         return;
     
