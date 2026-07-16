@@ -239,7 +239,7 @@ export default {
         const TotalToNextLevel: number = GetTotalExp(Player.level + 1);
 
         const Index: number = RoleRewards.findIndex(Reward => Reward.rank > Player.level) - 1;
-        const Color: number = Player.level < (RoleRewards.at(0)?.rank ?? -1) || RoleRewards.length 
+        const Color: number = Player.level < (RoleRewards.at(0)?.rank ?? -1) || !RoleRewards.length 
             ? 0xffffff 
             : RoleRewards[
                 Index !== -2 ? Index : RoleRewards.length - 1
