@@ -5,58 +5,76 @@ import FetchMeeseeksAPI from "../helpers/FetchMeeseeksAPI.js";
 import timers from "timers/promises";
 
 enum FailedReasons {
-    PlayerNotFound,
+    APIError,
     GuildNotFound,
+    PlayerNotFound,
     UserCancelled
 }
 
-interface LookForResult {
-    /**
-     * True = found, False = not found;
-     */
-    Status: boolean;
-    ServerName?: string;
-    Reason?: FailedReasons;
-    RoleRewards?: RoleRewards[];
-    EXPPerMessage?: [number, number];
-    Top1EXP?: Players;
-    Player?: Players;
-    Rank?: number;
+interface Failed {
+    Status: false;
+    Reason: FailedReasons;
 }
 
+interface Succeeded {
+    Status: true;
+    ServerName: string;
+    RoleRewards: RoleRewards[];
+    EXPPerMessage: [number, number];
+    Top1EXP: Players;
+    Player: Players;
+    Rank: number;
+}
+
+type LookForResult = 
+    | Failed
+    | Succeeded
+;
+
 const LookForPlayer = async (User: string, ServerID: string, Signal: AbortSignal): Promise<LookForResult> => {
-    const Output: LookForResult = {
-        Status: false
-    };
+    let ServerName!: string;
+    let RoleRewards!: RoleRewards[];
+    let EXPPerMessage!: [number, number];
+    let Top1EXP!: Players;
+    let Player!: Players;
+    let Rank!: number;
     
     try {
         for(let i = 0; i < 1000; i++) {
             const Res: Response = await FetchMeeseeksAPI(ServerID, i, Signal);
+            if(Res.status === 404) {
+                return {
+                    Status: false,
+                    Reason: FailedReasons.GuildNotFound
+                }
+            }
             if(!Res.ok) {
-                Output.Reason = FailedReasons.GuildNotFound;
-                break;
+                return {
+                    Status: false,
+                    Reason: FailedReasons.APIError
+                }
             }
     
             const Leaderboard: MeeseeksLeaderboard = await Res.json() as MeeseeksLeaderboard;
             if(i === 0) {
-                Output.Top1EXP = Leaderboard.players[0];
-                Output.RoleRewards = Leaderboard.role_rewards;
-                Output.EXPPerMessage = Leaderboard.xp_per_message;
+                Top1EXP = Leaderboard.players[0];
+                RoleRewards = Leaderboard.role_rewards;
+                EXPPerMessage = Leaderboard.xp_per_message;
+                ServerName = Leaderboard.guild.name;
             }
             
             const PlayerIndex: number = Leaderboard.players.findIndex(Player => Player.username === User || Player.id === User);
-        
             if(PlayerIndex !== -1) {
-                Output.Status = true;
-                Output.Player = Leaderboard.players[PlayerIndex];
-                Output.Rank = PlayerIndex + i * 1000 + 1;
-                Output.ServerName = Leaderboard.guild.name;
+                Player = Leaderboard.players[PlayerIndex];
+                Rank = PlayerIndex + i * 1000 + 1;
                 break;
             }
     
             if(i === 999) {
-                Output.Reason = FailedReasons.PlayerNotFound;
-                break;
+                return {
+                    Status: false,
+                    Reason: FailedReasons.PlayerNotFound
+                }
             }
     
             await timers.setTimeout(500, undefined, { signal: Signal });
@@ -72,7 +90,15 @@ const LookForPlayer = async (User: string, ServerID: string, Signal: AbortSignal
 
         throw Err;
     }
-    return Output;
+    return {
+        Status: true,
+        ServerName,
+        RoleRewards,
+        EXPPerMessage,
+        Top1EXP,
+        Player,
+        Rank
+    };
 };
 const ProgressBar = (Percent: number, Length: number = 20) => {
     Percent = Math.max(0, Math.min(1, Percent));
@@ -96,22 +122,22 @@ const FormatDuration = (MS: number, IncludeSlashes: boolean = false) => {
     );
 };
 const Average = (...Numbers: number[]): number => Numbers.reduce((Total: number, Num: number): number => Total + Num, 0) / Numbers.length;
-const GetStatistcString = (Statistic: LookForResult) => {
-    const CurrentEXP: number = Statistic.Player!.detailed_xp[0];
-    const NextLevel: number = Statistic.Player!.detailed_xp[1];
+const GetStatistcString = (Statistic: Succeeded) => {
+    const CurrentEXP: number = Statistic.Player.detailed_xp[0];
+    const NextLevel: number = Statistic.Player.detailed_xp[1];
     const ToNextLevel: number = NextLevel - CurrentEXP;
-    const MessagesLeft: number = Math.ceil(ToNextLevel / Average(...Statistic.EXPPerMessage!));
+    const MessagesLeft: number = Math.ceil(ToNextLevel / Average(...Statistic.EXPPerMessage));
     
     return (
-        `${Statistic.Player!.username}, ` +
-        `RANK #${Statistic.Rank} LEVEL ${Statistic.Player!.level}, ` +
+        `${Statistic.Player.username}, ` +
+        `RANK #${Statistic.Rank} LEVEL ${Statistic.Player.level}, ` +
         `${CurrentEXP}/${NextLevel} EXP ` +
         `${((CurrentEXP / NextLevel) * 100).toFixed(2)}%, ` +
-        `Total EXP: ${Statistic.Player!.xp}, Total msg: ${Statistic.Player!.message_count}, ` +
-        `Time spent: ${FormatDuration(Statistic.Player!.message_count * 60000, true)}, ` +
+        `Total EXP: ${Statistic.Player.xp}, Total msg: ${Statistic.Player.message_count}, ` +
+        `Time spent: ${FormatDuration(Statistic.Player.message_count * 60000, true)}, ` +
         `${ToNextLevel} EXP of ` +
-        `${MessagesLeft} message${MessagesLeft > 1 ? "s" : ""} left till LEVEL ${Statistic.Player!.level + 1}, ` +
-        `${((Statistic.Player!.xp / Statistic.Top1EXP!.xp) * 100).toFixed(2)}% of ${Statistic.Top1EXP!.username}`
+        `${MessagesLeft} message${MessagesLeft > 1 ? "s" : ""} left till LEVEL ${Statistic.Player.level + 1}, ` +
+        `${((Statistic.Player.xp / Statistic.Top1EXP.xp) * 100).toFixed(2)}% of ${Statistic.Top1EXP.username}`
     );
 };
 
@@ -189,6 +215,9 @@ export default {
                 case FailedReasons.UserCancelled:
                     ErrorMessage = "Command ended due to user canceling.";
                     break;
+                case FailedReasons.APIError:
+                    ErrorMessage = "API Error.";
+                    break;
             }
 
             await Interaction.followUp({
@@ -200,17 +229,17 @@ export default {
             return;
         }
 
-        const Player: Players = Result.Player!;
-        const Top1: Players = Result.Top1EXP!;
-        const RoleRewards: RoleRewards[] = Result.RoleRewards!;
-        const CurrentEXP: number = Result.Player!.detailed_xp[0];
-        const NextLevel: number = Result.Player!.detailed_xp[1];
+        const Player: Players = Result.Player;
+        const Top1: Players = Result.Top1EXP;
+        const RoleRewards: RoleRewards[] = Result.RoleRewards;
+        const CurrentEXP: number = Result.Player.detailed_xp[0];
+        const NextLevel: number = Result.Player.detailed_xp[1];
         const ToNextLevel: number = NextLevel - CurrentEXP;
         const TotalEXP: number = Player.xp;
         const TotalToNextLevel: number = GetTotalExp(Player.level + 1);
 
         const Index: number = RoleRewards.findIndex(Reward => Reward.rank > Player.level) - 1;
-        const Color: number = Player.level < (RoleRewards.at(0)?.rank ?? -1) || !RoleRewards.length 
+        const Color: number = Player.level < (RoleRewards.at(0)?.rank ?? -1) || RoleRewards.length 
             ? 0xffffff 
             : RoleRewards[
                 Index !== -2 ? Index : RoleRewards.length - 1
@@ -219,7 +248,7 @@ export default {
         const LevelPercentage: number = CurrentEXP / NextLevel;
         const OverallPercentage: number = TotalEXP / TotalToNextLevel;
         const ToTop1Percentage: number = TotalEXP / Top1.xp;
-        const MessagesLeft: number = Math.ceil(ToNextLevel / Average(...Result.EXPPerMessage!));
+        const MessagesLeft: number = Math.ceil(ToNextLevel / Average(...Result.EXPPerMessage));
 
         const Embed: EmbedBuilder = new EmbedBuilder()
             .setColor(Color)
@@ -229,7 +258,7 @@ export default {
                 iconURL: Who.displayAvatarURL({ size: 256 })
             })
             .setThumbnail(Who.displayAvatarURL({ size: 512 }))
-            .setTitle(Result.ServerName!)
+            .setTitle(Result.ServerName)
             .setDescription(
                 `Total messages: ${Player.message_count}, ` +
                 `Time spent: ${FormatDuration(Player.message_count * 60000)}`
