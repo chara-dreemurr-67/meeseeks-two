@@ -191,12 +191,12 @@ export default {
                     break;
             }
 
-            await Interaction.deleteReply().catch(() => {});
             await Interaction.followUp({
                 content: ErrorMessage!,
                 allowedMentions: { repliedUser: false },
                 flags: MessageFlags.Ephemeral
             });
+            await Interaction.deleteReply().catch(() => {});
             return;
         }
 
