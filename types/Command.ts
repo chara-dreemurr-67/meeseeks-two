@@ -8,4 +8,5 @@ export interface Command {
         Pool: Map<string, AbortController>;
         Message?: string;
     };
+    Administrator?: boolean;
 }

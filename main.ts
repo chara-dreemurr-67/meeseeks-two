@@ -1,9 +1,8 @@
 import { Client as C, GatewayIntentBits, Events, MessageFlags } from "discord.js";
 import type { Command } from "./types/Command.js";
-import dotenv from "dotenv";
-import CommandManager from "./CommandManager.js";
+import CommandManager from "./singletons/CommandManager.js";
+import LoadEnv from "./singletons/LoadEnv.js";
 
-dotenv.config();
 await CommandManager.LoadCommands();
 
 const Client: C = new C({
@@ -47,6 +46,14 @@ Client.on(Events.InteractionCreate, async Interaction => {
 
     try {
         console.log(`${Interaction.user.id}(${Interaction.user.username}) used ${Interaction.commandName}.`);
+        if(Command.Administrator && Interaction.user.id !== LoadEnv.ADMINISTRATOR_ID) {
+            await Interaction.reply({
+                content: "Only the bot host can run this command.",
+                allowedMentions: { repliedUser: false },
+                flags: MessageFlags.Ephemeral    
+            });
+            return;
+        }
         await Command.Action(Interaction, Arg2?.signal);
     }
     catch(Err) {
@@ -72,4 +79,4 @@ Client.on(Events.InteractionCreate, async Interaction => {
         }
     }
 });
-Client.login(process.env.DISCORD_TOKEN);
+Client.login(LoadEnv.DISCORD_TOKEN);

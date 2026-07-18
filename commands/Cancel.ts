@@ -1,6 +1,6 @@
 import { AutocompleteInteraction, ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from "discord.js";
 import type { Command } from "../types/Command.js";
-import CommandManager from "../CommandManager.js";
+import CommandManager from "../singletons/CommandManager.js";
 
 const SendMessage = async (Interaction: ChatInputCommandInteraction, Message: string): Promise<void> => {
     await Interaction.reply({

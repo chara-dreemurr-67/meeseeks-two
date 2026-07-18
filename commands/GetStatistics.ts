@@ -70,7 +70,7 @@ const LookForPlayer = async (User: string, ServerID: string, Signal: AbortSignal
                 break;
             }
     
-            if(i === 999) {
+            if(Leaderboard.players.length < 1000) {
                 return {
                     Status: false,
                     Reason: FailedReasons.PlayerNotFound
@@ -238,12 +238,10 @@ export default {
         const TotalEXP: number = Player.xp;
         const TotalToNextLevel: number = GetTotalExp(Player.level + 1);
 
-        const Index: number = RoleRewards.findIndex(Reward => Reward.rank > Player.level) - 1;
-        const Color: number = Player.level < (RoleRewards.at(0)?.rank ?? -1) || !RoleRewards.length 
-            ? 0xffffff 
-            : RoleRewards[
-                Index !== -2 ? Index : RoleRewards.length - 1
-            ].role.color
+        const Index: number = RoleRewards.findIndex(Reward => Reward.rank > Player.level);
+        const Color: number = RoleRewards.length && Player.level > RoleRewards[0].rank
+            ? RoleRewards[Index !== -1 ? Index -1 : RoleRewards.length - 1].role.color
+            : 0xffffff
         ;
         const LevelPercentage: number = CurrentEXP / NextLevel;
         const OverallPercentage: number = TotalEXP / TotalToNextLevel;
