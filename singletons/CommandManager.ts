@@ -1,4 +1,5 @@
 import type { Command } from "../types/Command.js";
+import { pathToFileURL } from "url";
 import fs from "fs";
 import path from "path";
 
@@ -6,9 +7,9 @@ class CommandManager {
     private readonly Registry: Map<string, Command> = new Map<string, Command>();
     private Loaded: boolean = false;
 
-    public Register = (Command: Command): void => {
+    public Register(Command: Command): void {
         this.Registry.set(Command.Command.name, Command);
-    };
+    }
 
     public async LoadCommands(): Promise<void> {
         if(this.Loaded)
@@ -23,10 +24,9 @@ class CommandManager {
         ;
 
         for(const File of CommandFiles) {
-            const Command: Command = (await import(path.join(CommandDir, File))).default;
-            if(Command.Cancelable) {
+            const Command: Command = (await import(pathToFileURL(path.join(CommandDir, File)).href)).default;
+            if(Command.Cancelable) 
                 Command.Command.setDescription(`${Command.Command.description} (Cancelable)`);
-            }
             this.Register(Command);
         }
     }
