@@ -16,12 +16,14 @@ class CommandManager {
 
         this.Loaded = true;
 
-        const CommandFiles: string[] = fs.readdirSync(path.join(import.meta.dirname, "commands"))
+        const CommandDir: string = path.join(import.meta.dirname, "..", "commands");
+
+        const CommandFiles: string[] = fs.readdirSync(path.join(CommandDir))
             .filter(file => file.endsWith(".ts") || file.endsWith(".js"))
         ;
 
         for(const File of CommandFiles) {
-            const Command: Command = (await import(`./commands/${File}`)).default;
+            const Command: Command = (await import(path.join(CommandDir, File))).default;
             if(Command.Cancelable) {
                 Command.Command.setDescription(`${Command.Command.description} (Cancelable)`);
             }
