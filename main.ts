@@ -8,6 +8,7 @@ await CommandManager.LoadCommands();
 const Client: C = new C({
     intents: [
         GatewayIntentBits.Guilds,
+        GatewayIntentBits.DirectMessages
     ]
 });
 
