@@ -27,7 +27,7 @@ const C: SlashCommandOptionsOnlyBuilder = new SlashCommandBuilder()
     .setDescription("Get a list of commands.")
 ;
 
-Command.New(C)
+export default Command.New(C)
 (async (Interaction: ChatInputCommandInteraction): Promise<void> => {
     await Interaction.deferReply({
         flags: MessageFlags.Ephemeral
