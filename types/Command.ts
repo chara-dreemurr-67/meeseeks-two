@@ -94,8 +94,9 @@ export default class Command {
         this.Action = Action;
         this._Administrator = Extra?.Administrator ?? false;
 
-        if(Extra?.Cancelable) {
+        if(Extra?.Cancelable?.IsCancelable) {
             this._Pool = new Map();
+            this._CancelMessage = Extra?.Cancelable.Message
         }
     }
 
