@@ -47,13 +47,21 @@ type InteractionMap = {
 type InteractionHandlersRegistry = { [K in InteractionTypes]: InteractionHandlers<InteractionMap[K]> };
 
 export default class Command {
-    private _Pool?: Map<string, AbortController>;
-    private _Administrator: boolean;
+    private readonly _Administrator: boolean;
+    private readonly _Command: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
+    private readonly _Action: (Interaction: ChatInputCommandInteraction, Signal?: AbortSignal, Client?: Client) => Promise<void>;
+    
+    private readonly _Pool?: Map<string, AbortController>;
+    private readonly _CancelMessage?: string;
 
-    private _CancelMessage?: string;
-
-    public set CancelMessage(value: string) {
-        this._CancelMessage = value;
+    public get Action(): (Interaction: ChatInputCommandInteraction, Signal?: AbortSignal, Client?: Client) => Promise<void> {
+        return this._Action;
+    }
+    public get Command(): SlashCommandBuilder | SlashCommandOptionsOnlyBuilder {
+        return this._Command;
+    }
+    public get Administrator(): boolean {
+        return this._Administrator;
     }
     public get Cancelable(): { Pool: Map<string, AbortController>; Message?: string; } | undefined {
         if(!this._Pool)
@@ -61,14 +69,7 @@ export default class Command {
 
         return { Pool: this._Pool, Message: this._CancelMessage };
     }
-    public get Administrator(): boolean {
-        return this._Administrator;
-    }
     
-    public readonly Command: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
-
-    public readonly Action: (Interaction: ChatInputCommandInteraction, Signal?: AbortSignal, Client?: Client) => Promise<void>;
-
     public readonly InteractionHandlers: InteractionHandlersRegistry = {
         [InteractionTypes.Autocomplete]: {},
         [InteractionTypes.Button]: {},
@@ -90,17 +91,16 @@ export default class Command {
             Administrator?: boolean
         }
     ) {
-        this.Command = Command;
-        this.Action = Action;
+        this._Command = Command;
+        this._Action = Action;
         this._Administrator = Extra?.Administrator ?? false;
 
         if(Extra?.Cancelable?.IsCancelable) {
             this._Pool = new Map();
-            this._CancelMessage = Extra?.Cancelable.Message
+            this._CancelMessage = Extra?.Cancelable.Message;
         }
     }
 
-    // trying out decorators, unfortunately this doesn't work for 
     public static New(
         C: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder,
         Extra?: {
