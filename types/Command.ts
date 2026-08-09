@@ -79,7 +79,7 @@ export default class Command {
         [InteractionTypes.MentionableMenu]: {}
     }; 
 
-    public constructor(
+    private constructor(
         Command: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder,
         Action: (Interaction: ChatInputCommandInteraction, Signal?: AbortSignal, Client?: Client) => Promise<void>,
         Extra?: {
@@ -99,28 +99,35 @@ export default class Command {
         }
     }
 
-    public AddInteractionHandler<T extends InteractionTypes>(
-        Type: T,
-        Handlers: InteractionHandlers<InteractionMap[T]>
-    ): this;
-    public AddInteractionHandler<T extends InteractionTypes>(
-        Type: T,
-        Name: string,
-        Handler: InteractionHandler<InteractionMap[T]>
-    ): this;
-    public AddInteractionHandler<T extends InteractionTypes>(
-        Type: T,
-        NameOrHandlers: InteractionHandlers<InteractionMap[T]> | string,
-        Handler?: InteractionHandler<InteractionMap[T]>
-    ): this {
-        if(typeof NameOrHandlers === "string") {
-            if(!Handler)
-                throw new Error("Handler is required.");
-
-            Object.assign(this.InteractionHandlers[Type], { [NameOrHandlers]: Handler });
+    // trying out decorators, unfortunately this doesn't work for 
+    public static New(
+        C: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder,
+        Extra?: {
+            Cancelable?: { IsCancelable: boolean; Message?: string; },
+            Administrator?: boolean
         }
-        else Object.assign(this.InteractionHandlers[Type], NameOrHandlers);
-        return this;
+    ): (Action: (Interaction: ChatInputCommandInteraction, Signal?: AbortSignal, Client?: Client) => Promise<void>) => Command {
+        return (Action: (Interaction: ChatInputCommandInteraction, Signal?: AbortSignal, Client?: Client) => Promise<void>) => 
+            new Command(C, Action, Extra);
+    }
+
+    public AddSingleInteractionHandler<T extends InteractionTypes>(
+        Type: T,
+        Name: string
+    ): (Handler: InteractionHandler<InteractionMap[T]>) => this {
+        return (Handler: InteractionHandler<InteractionMap[T]>): this => {
+            Object.assign(this.InteractionHandlers[Type], { [Name]: Handler });
+            return this;
+        };
+    }
+
+    public AddMultipleInteractionHandlers<T extends InteractionTypes>(
+        Type: T
+    ): (Handlers: InteractionHandlers<InteractionMap[T]>) => this  {
+        return (Handlers: InteractionHandlers<InteractionMap[T]>): this => {
+            Object.assign(this.InteractionHandlers[Type], Handlers);
+            return this;
+        }
     }
 
     public GetInteractionHandler<T extends InteractionTypes>(
