@@ -1,6 +1,9 @@
 {
   "devDependencies": {
-    "@types/node": "^26.1.1"
+    "@types/node": "^26.1.1",
+    "tsc": "^2.0.4",
+    "tsx": "^4.23.11",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "discord.js": "^14.27.0",
