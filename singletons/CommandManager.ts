@@ -1,15 +1,15 @@
-import type { Command } from "../types/Command.js";
 import { pathToFileURL } from "url";
-import fs from "fs";
+import Command from "../types/Command.js";
+import fs from "fs/promises"; 
 import path from "path";
 
-class CommandManager {
+export default new class {
     private readonly Registry: Map<string, Command> = new Map<string, Command>();
     private Loaded: boolean = false;
 
-    public Register(Command: Command): void {
+    public Register = (Command: Command): void => {
         this.Registry.set(Command.Command.name, Command);
-    }
+    };
 
     public async LoadCommands(): Promise<void> {
         if(this.Loaded)
@@ -17,16 +17,18 @@ class CommandManager {
 
         this.Loaded = true;
 
-        const CommandDir: string = path.join(import.meta.dirname, "..", "commands");
-
-        const CommandFiles: string[] = fs.readdirSync(path.join(CommandDir))
+        const PathToDir: string = path.join(import.meta.dirname, "..", "commands");
+        const CommandFiles: string[] = (await fs.readdir(PathToDir))
             .filter(file => file.endsWith(".ts") || file.endsWith(".js"))
         ;
 
         for(const File of CommandFiles) {
-            const Command: Command = (await import(pathToFileURL(path.join(CommandDir, File)).href)).default;
+            const Command: Command = (await import(pathToFileURL(path.join(PathToDir, File)).href)).default;
             if(Command.Cancelable) 
                 Command.Command.setDescription(`${Command.Command.description} (Cancelable)`);
+
+            if(Command.Administrator)
+                Command.Command.setDescription(`${Command.Command.description} (Administrator Command)`);
             this.Register(Command);
         }
     }
@@ -42,6 +44,4 @@ class CommandManager {
     public Has(Name: string): boolean {
         return this.Registry.has(Name);
     }
-}
-
-export default new CommandManager();
+}();

@@ -1,23 +1,10 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, User, EmbedBuilder, MessageFlags } from "discord.js";
+import { ChatInputCommandInteraction, EmbedBuilder, MessageFlags, SlashCommandBuilder, User } from "discord.js";
+import Command from "../types/Command.js";
 import type { MeeseeksLeaderboard, Players, RoleRewards } from "../types/MeeseeksLeaderboard.js";
-import type { Command } from "../types/Command.js";
 import FetchMeeseeksAPI from "../helpers/FetchMeeseeksAPI.js";
 import timers from "timers/promises";
 
-enum FailedReasons {
-    APIError,
-    GuildNotFound,
-    PlayerNotFound,
-    UserCancelled
-}
-
-interface Failed {
-    Status: false;
-    Reason: FailedReasons;
-}
-
-interface Succeeded {
-    Status: true;
+interface LookForResult {
     ServerName: string;
     RoleRewards: RoleRewards[];
     EXPPerMessage: [number, number];
@@ -26,12 +13,12 @@ interface Succeeded {
     Rank: number;
 }
 
-type LookForResult = 
-    | Failed
-    | Succeeded
-;
-
-const LookForPlayer = async (User: string, ServerID: string, Signal: AbortSignal): Promise<LookForResult> => {
+const LookForPlayer = async (
+    Interaction: ChatInputCommandInteraction,
+    User: User,
+    ServerID: string,
+    Signal: AbortSignal
+): Promise<LookForResult | undefined> => {
     let ServerName!: string;
     let RoleRewards!: RoleRewards[];
     let EXPPerMessage!: [number, number];
@@ -43,16 +30,18 @@ const LookForPlayer = async (User: string, ServerID: string, Signal: AbortSignal
         for(let i = 0; i < 1000; i++) {
             const Res: Response = await FetchMeeseeksAPI(ServerID, i, Signal);
             if(Res.status === 404) {
-                return {
-                    Status: false,
-                    Reason: FailedReasons.GuildNotFound
-                }
+                await Interaction.editReply({
+                    content: `Server ${ServerID} doesn't exist or doesn't use MEE6 leveling.`,
+                    allowedMentions: { repliedUser: false }
+                });
+                return;
             }
             if(!Res.ok) {
-                return {
-                    Status: false,
-                    Reason: FailedReasons.APIError
-                }
+                await Interaction.editReply({
+                    content: "API Error.",
+                    allowedMentions: { repliedUser: false }
+                });
+                return;
             }
     
             const Leaderboard: MeeseeksLeaderboard = await Res.json() as MeeseeksLeaderboard;
@@ -63,7 +52,7 @@ const LookForPlayer = async (User: string, ServerID: string, Signal: AbortSignal
                 ServerName = Leaderboard.guild.name;
             }
             
-            const PlayerIndex: number = Leaderboard.players.findIndex(Player => Player.username === User || Player.id === User);
+            const PlayerIndex: number = Leaderboard.players.findIndex(Player => Player.username === User.username || Player.id === User.id);
             if(PlayerIndex !== -1) {
                 Player = Leaderboard.players[PlayerIndex];
                 Rank = PlayerIndex + i * 1000 + 1;
@@ -71,10 +60,11 @@ const LookForPlayer = async (User: string, ServerID: string, Signal: AbortSignal
             }
     
             if(Leaderboard.players.length < 1000) {
-                return {
-                    Status: false,
-                    Reason: FailedReasons.PlayerNotFound
-                }
+                await Interaction.editReply({
+                    content: `User ${User.id}(${User.username}) isn't in ${ServerID} or isn't in the top 1000000 of the server.`,
+                    allowedMentions: { repliedUser: false }
+                });
+                return;
             }
     
             await timers.setTimeout(500, undefined, { signal: Signal });
@@ -82,16 +72,16 @@ const LookForPlayer = async (User: string, ServerID: string, Signal: AbortSignal
     }
     catch(Err) {
         if(Err instanceof Error && Err.name === "AbortError") {
-            return {
-                Status: false,
-                Reason: FailedReasons.UserCancelled
-            }
+            await Interaction.editReply({
+                content: "Command ended due to user canceling.",
+                allowedMentions: { repliedUser: false }
+            });
+            return;
         }
 
         throw Err;
     }
     return {
-        Status: true,
         ServerName,
         RoleRewards,
         EXPPerMessage,
@@ -122,7 +112,7 @@ const FormatDuration = (MS: number, IncludeSlashes: boolean = false) => {
     );
 };
 const Average = (...Numbers: number[]): number => Numbers.reduce((Total: number, Num: number): number => Total + Num, 0) / Numbers.length;
-const GetStatistcString = (Statistic: Succeeded) => {
+const GetStatistcString = (Statistic: LookForResult) => {
     const CurrentEXP: number = Statistic.Player.detailed_xp[0];
     const NextLevel: number = Statistic.Player.detailed_xp[1];
     const ToNextLevel: number = NextLevel - CurrentEXP;
@@ -141,10 +131,10 @@ const GetStatistcString = (Statistic: Succeeded) => {
     );
 };
 
-const Cooldowns: Record<string, number> = {};
+const Cooldowns: Map<string, number> = new Map();
 
-export default {
-    Command: new SlashCommandBuilder()
+export default new Command(
+    new SlashCommandBuilder()
         .setName("getstatistics")
         .setDescription("Get your or someone else's progress to a specific level.")
         .addUserOption(Option => 
@@ -166,7 +156,7 @@ export default {
                 .setRequired(false)
         )
     ,
-    Action: async (Interaction: ChatInputCommandInteraction, Signal: AbortSignal | undefined): Promise<void> => {
+    async (Interaction: ChatInputCommandInteraction, Signal: AbortSignal | undefined): Promise<void> => {
         const Start: number = Date.now();
 
         const Who: User = Interaction.options.getUser("who", false) ?? Interaction.user;
@@ -174,7 +164,7 @@ export default {
         const IsEphemeral: boolean = Interaction.options.getBoolean("ephemeral", false) ?? true;
         const UserID: string = Interaction.user.id;
 
-        const CDEnds: number = Cooldowns[UserID];
+        const CDEnds: number | undefined = Cooldowns.get(UserID);
         const Now: number = Date.now();
         if(CDEnds && CDEnds > Now) {
             const Remaining: string = ((CDEnds - Now) / 1000).toFixed(1);
@@ -199,35 +189,12 @@ export default {
             flags: IsEphemeral ? MessageFlags.Ephemeral : undefined
         });
         
-        const Result: LookForResult = await LookForPlayer(Who.id, Where, Signal!);
-        Cooldowns[UserID] = Date.now() + 7500;
-        setTimeout(() => delete Cooldowns[UserID], 7500);
-        if(!Result.Status) {
-            let ErrorMessage: string;
+        const Result: LookForResult | undefined = await LookForPlayer(Interaction, Who, Where, Signal!);
+        Cooldowns.set(UserID, Date.now() + 7500);
+        setTimeout(() => Cooldowns.delete(UserID), 7500);
 
-            switch(Result.Reason) {
-                case FailedReasons.GuildNotFound:
-                    ErrorMessage = `Server ${Where} doesn't exist or doesn't use MEE6 leveling.`;
-                    break;
-                case FailedReasons.PlayerNotFound:
-                    ErrorMessage = `User ${Who.id}(${Who.username}) isn't in ${Where} or isn't in the top 1000000 of the server.`;
-                    break;
-                case FailedReasons.UserCancelled:
-                    ErrorMessage = "Command ended due to user canceling.";
-                    break;
-                case FailedReasons.APIError:
-                    ErrorMessage = "API Error.";
-                    break;
-            }
-
-            await Interaction.followUp({
-                content: ErrorMessage!,
-                allowedMentions: { repliedUser: false },
-                flags: MessageFlags.Ephemeral
-            });
-            await Interaction.deleteReply().catch(() => {});
+        if(!Result)
             return;
-        }
 
         const Player: Players = Result.Player;
         const Top1: Players = Result.Top1EXP;
@@ -311,8 +278,10 @@ export default {
             allowedMentions: { repliedUser: false }
         });
     },
-    Cancelable: {
-        Pool: new Map(),
-        Message: "Your previous request is still running. Please wait until it finishes."
+    {
+        Cancelable: {
+            IsCancelable: true,
+            Message: "Your previous request is still running. Please wait until it finishes."
+        }
     }
-} satisfies Command;
+);
