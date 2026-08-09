@@ -1,4 +1,4 @@
-import { EventEmitter } from "stream";
+import EventEmitter from "events";
 import GenerateUniqueUUID from "../helpers/GenerateUniqueUUID.js";
 import LoadEnv from "./LoadEnv.js";
 
