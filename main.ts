@@ -28,50 +28,27 @@ Client.on(Events.InteractionCreate, async Interaction => {
                 return;
             
             const FocusedOption: AutocompleteFocusedOption = Interaction.options.getFocused(true);
-            const Handler = Command.GetInteractionHandler(
+            return await Command.GetInteractionHandler(
                 InteractionTypes.Autocomplete,
                 FocusedOption.name
-            );
-
-            if(!Handler)
-                return;
-
-            await Handler(Interaction, Client);
+            )?.(Interaction, Client);
         }
         return;
     }
 
     if(Interaction.isButton()) {
-        if(!EmbedActionInteractionManager.Registry[Interaction.user.id]) 
+        const EmbedActionInteraction: Action = EmbedActionInteractionManager.InteractionRegistry[Interaction.user.id]?.[Interaction.customId];
+        if(!EmbedActionInteraction)
             return;
         
-        const EmbedActionInteraction: Action = EmbedActionInteractionManager.Registry[Interaction.user.id][Interaction.customId];
-
-        if(!EmbedActionInteraction) {
-            await Interaction.reply({
-                content: "This interaction has been expired, or it is not belong to you.",
-                allowedMentions: { repliedUser: false },
-                flags: MessageFlags.Ephemeral
-            });
-            return;
-        }
-
-        const Command: Command | undefined = CommandManager.Get(EmbedActionInteraction.CommandName);
-        if(!Command) 
-            return;
-
-        const Handler = Command.GetInteractionHandler(
+        return await CommandManager.Get(EmbedActionInteraction.CommandName)?.GetInteractionHandler(
             InteractionTypes.Button,
             EmbedActionInteraction.ActionName
-        );
-        if(!Handler)
-            return;
-
-        return await Handler(Interaction, Client);
+        )?.(Interaction, Client);
     }
 
     if(Interaction.isAnySelectMenu()) {
-        const EmbedActionInteraction: Action = EmbedActionInteractionManager.Registry[Interaction.user.id][Interaction.customId];
+        const EmbedActionInteraction: Action = EmbedActionInteractionManager.InteractionRegistry[Interaction.user.id]?.[Interaction.customId];
         if(!EmbedActionInteraction)
             return;
 
@@ -80,63 +57,19 @@ Client.on(Events.InteractionCreate, async Interaction => {
             return;
 
         const ActionName: string = EmbedActionInteraction.ActionName;
-
-        if(Interaction.isStringSelectMenu()) {
-            const Handler = Command.GetInteractionHandler(
-                InteractionTypes.StringMenu,
-                ActionName
-            );
-
-            if(!Handler)
-                return;
-
-            await Handler(Interaction, Client);
-        }
-        else if(Interaction.isUserSelectMenu()) {
-            const Handler = Command.GetInteractionHandler(
-                InteractionTypes.UserMenu,
-                ActionName
-            );
-
-            if(!Handler)
-                return;
-            
-            await Handler(Interaction, Client);
-        }
-        else if(Interaction.isRoleSelectMenu()) {
-            const Handler = Command.GetInteractionHandler(
-                InteractionTypes.RoleMenu,
-                ActionName
-            );
-
-            if(!Handler)
-                return;
-            
-            await Handler(Interaction, Client);
-        }
-        else if(Interaction.isChannelSelectMenu()) {
-            const Handler = Command.GetInteractionHandler(
-                InteractionTypes.ChannelMenu,
-                ActionName
-            );
-
-            if(!Handler)
-                return;
-            
-            await Handler(Interaction, Client);
-        }
-        else if(Interaction.isMentionableSelectMenu()) {
-            const Handler = Command.GetInteractionHandler(
-                InteractionTypes.MentionableMenu,
-                ActionName
-            );
-
-            if(!Handler)
-                return;
-            
-            await Handler(Interaction, Client);
-        }
-        return;
+        return await (
+            Interaction.isStringSelectMenu() 
+                ? Command.GetInteractionHandler(InteractionTypes.StringMenu, ActionName)
+            : Interaction.isUserSelectMenu()
+                ? Command.GetInteractionHandler(InteractionTypes.UserMenu, ActionName)
+            : Interaction.isRoleSelectMenu()
+                ? Command.GetInteractionHandler(InteractionTypes.RoleMenu, ActionName)
+            : Interaction.isChannelSelectMenu()
+                ? Command.GetInteractionHandler(InteractionTypes.ChannelMenu, ActionName)
+            : Interaction.isChannelSelectMenu()
+                ? Command.GetInteractionHandler(InteractionTypes.MentionableMenu, ActionName)
+            : undefined
+        )?.(Interaction as any, Client);
     }
 
     if(!Interaction.isChatInputCommand()) 

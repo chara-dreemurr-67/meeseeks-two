@@ -124,17 +124,17 @@ export default class Command {
 
     public AddMultipleInteractionHandlers<T extends InteractionTypes>(
         Type: T
-    ): (Handlers: InteractionHandlers<InteractionMap[T]>) => this  {
+    ): (Handlers: InteractionHandlers<InteractionMap[T]>) => this {
         return (Handlers: InteractionHandlers<InteractionMap[T]>): this => {
             Object.assign(this.InteractionHandlers[Type], Handlers);
             return this;
-        }
+        };
     }
 
     public GetInteractionHandler<T extends InteractionTypes>(
         Type: T,
         Name: string
-    ): InteractionHandler<InteractionMap[T]> | undefined{
+    ): InteractionHandler<InteractionMap[T]> | undefined {
         return this.InteractionHandlers[Type][Name];
     }
 };

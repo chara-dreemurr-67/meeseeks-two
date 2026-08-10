@@ -50,30 +50,32 @@ export default Command.New(C)
                 [ButtonType.ForwardToEnd]: ""
             }
         };
+        const MetaID: string = EmbedActionInteractionManager.AddMeta(InteractionMeta);
+        
         const InteractionIDs: Record<ButtonType, string> = {
             [ButtonType.BackwardToStart]: EmbedActionInteractionManager.AddInteraction(
                 UserID,
                 CommandName,
                 ButtonType.BackwardToStart,
-                InteractionMeta
+                MetaID
             ),
             [ButtonType.Backward]: EmbedActionInteractionManager.AddInteraction(
                 UserID,
                 CommandName,
                 ButtonType.Backward,
-                InteractionMeta
+                MetaID
             ),
             [ButtonType.Forward]: EmbedActionInteractionManager.AddInteraction(
                 UserID,
                 CommandName,
                 ButtonType.Forward,
-                InteractionMeta
+                MetaID
             ),
             [ButtonType.ForwardToEnd]: EmbedActionInteractionManager.AddInteraction(
                 UserID,
                 CommandName,
                 ButtonType.ForwardToEnd,
-                InteractionMeta
+                MetaID
             )
         };
 
@@ -82,7 +84,7 @@ export default Command.New(C)
         const Embed: EmbedBuilder = new EmbedBuilder()
             .setColor(0x00ffff)
             .setTitle("Help command.")
-            .setDescription(`Page ${1} / ${MaxPage}`)
+            .setDescription(`Page 1 / ${MaxPage}`)
             .addFields(
                 ...CommandPage.map(Command => ({
                     name: `/${Command.Command.name} ${
@@ -137,7 +139,7 @@ export default Command.New(C)
 .AddMultipleInteractionHandlers(InteractionTypes.Button)
 (CreateNavigationButtonHandler()
 (async (Interaction: ButtonInteraction, Type: ButtonType): Promise<void> => {
-    const InteractionMeta: InteractionMeta | undefined = EmbedActionInteractionManager.GetInteraction<InteractionMeta>(
+    const InteractionMeta: InteractionMeta | undefined = EmbedActionInteractionManager.GetInteractionMeta<InteractionMeta>(
         Interaction.user.id, 
         Interaction.customId
     );
