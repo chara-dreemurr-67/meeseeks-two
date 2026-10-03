@@ -1,32 +1,39 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "lib": ["ES2022"],
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
+		"lib": [
+			"ESNext",
+			"ESNext.Iterator"
+		],
 
-    "outDir": "./public",
-    "rootDir": "./",
+		"types": [
+			"node"
+		],
 
-    "strict": true,
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
+		"outDir": "./public",
+		"rootDir": "./src",
 
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
+		"strict": true,
+		"noImplicitReturns": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
 
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"forceConsistentCasingInFileNames": true,
 
-    "declaration": false,
-    "sourceMap": false,
+		"skipLibCheck": true,
+		"resolveJsonModule": true,
 
-    "isolatedModules": true,
-    "verbatimModuleSyntax": true
-  },
-  "include": ["./**/*"],
-  "exclude": ["node_modules", "dist", "DeployCommands.ts", "DeployCommandsT.ts"]
+		"declaration": false,
+		"sourceMap": false,
+
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true
+	},
+	"include": ["./src/**/*"],
+	"exclude": ["node_modules", "public"]
 }

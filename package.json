@@ -1,18 +1,37 @@
 {
-  "dependencies": {
-    "discord.js": "^14.26.5",
-    "dotenv": "^17.4.2"
+  "name": "meeseeks-two-v2",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/chara-dreemurr-67/meeseeks-two#readme",
+  "bugs": {
+    "url": "https://github.com/chara-dreemurr-67/meeseeks-two/issues"
   },
-  "devDependencies": {
-    "@types/node": "^26.1.1",
-    "tsx": "^4.23.0",
-    "typescript": "^7.0.2"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chara-dreemurr-67/meeseeks-two.git"
   },
+  "license": "ISC",
+  "author": "",
   "type": "module",
+  "main": "main.js",
   "scripts": {
     "dev": "tsx main.ts",
-    "start": "node public/main.js",
-    "deploy": "tsx DeployCommands.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "start": "node ./public/main.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.27.0",
+    "dotenv": "^18.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "imports": {
+    "#helpers/*": ["./public/helpers/*.js"],
+    "#types/*": ["./public/types/*.js"],
+    "#decorators/*": ["./public/decorators/*.js"],
+    "#*": ["./public/singletons/*.js"]
   }
 }

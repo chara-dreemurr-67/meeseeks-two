@@ -1,10 +1,7 @@
-# meeseeks-two
-meeseeks is so good someone made meeseeks 2.
+# claires-bot-template
+Template repository for my Discord bot projects. All future projects involving Discord bots will be forks of this repository. Feel free to use this template.
 
-## Attribution
-Massive thanks to [GDjkhp](https://github.com/GDjkhp)'s [meeseeks-leaderboard-api](https://github.com/GDjkhp/meeseeks-leaderboard-api), as this project wouldn't exist without it.
-
-## Build Instructions
+## Build Instructions (just boilerplate because i'm too lazy to copy over)
 ### Prerequisites
 1. [Git](https://git-scm.com/). (why are you even on github without git)
 2. [Node.js](https://nodejs.org/en/download). (and also npm but that should come with node, i think)
@@ -23,8 +20,13 @@ npm run build
 ### After Building
 1. Create a file named ".env" and put it in public/ (or whatever folder the main.js file is in, but it should be public/ by default). The file should look something like this:
 ```txt
-DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN
-CLIENT_ID=YOUR_BOT_ID
+# required:
+DISCORD_TOKEN= # bot token. do not fucking share this shit with anyone that has no business having it
+CLIENT_ID= # bot id
+
+# optional:
+ADMINISTRATOR_IDS= # an array of ids of bot admins as strings. this is an empty array by default
+EMBED_EXPIRY_DURATION= # lifetime of embeds, this is 15 minutes (900 seconds) by default
 ```
 2. Register your bot's command: (Note: rerun this every time you modified the commands' property (name, description, options), or just make it run every time the bot starts)
 ```bash
