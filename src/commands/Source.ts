@@ -4,7 +4,7 @@ import {
     SlashCommandBuilder
 } from "discord.js";
 import Command from "#types/Command";
-import Env from "#Env";
+import Env from "commaenv";
 
 export default class Source extends Command {
     public Command: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder = new SlashCommandBuilder()

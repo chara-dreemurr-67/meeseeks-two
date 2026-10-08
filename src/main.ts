@@ -11,7 +11,7 @@ import CommandManager from "#CommandManager";
 import InteractionTypes from "#types/InteractionTypes";
 import EmbedManager from "#EmbedManager";
 import IsAdmin from "#helpers/IsAdmin";
-import Env from "#Env";
+import Env from "commaenv";
 import "./init.js";
 import "./deploy.js";
 

@@ -1,10 +1,10 @@
 import CommandManager from "#CommandManager";
-import Env, { VariableTypes } from "#Env";
+import Env from "commaenv";
 
 await CommandManager.LoadCommands();
-Env.RegisterVariable("ADMINISTRATOR_IDS", { Type: VariableTypes.Array, Default: [] })
-    .RegisterVariable("EMBED_EXPIRY_DURATION", { Type: VariableTypes.Number, Default: 900 })
-    .RegisterVariable("SOURCE", { Default: "https://github.com/chara-dreemurr-67/claires-bot-template" })
+Env.RegisterVariable("ADMINISTRATOR_IDS", Env.array("string").Default([]))
+    .RegisterVariable("EMBED_EXPIRY_DURATION", Env.number().Default(900))
+    .RegisterVariable("SOURCE", Env.string().Default("https://github.com/chara-dreemurr-67/claires-bot-template"))
     .RegisterVariable("DISCORD_TOKEN")
     .RegisterVariable("CLIENT_ID")
 ;

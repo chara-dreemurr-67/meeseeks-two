@@ -1,6 +1,6 @@
-import Env from "#Env";
 import GenerateUUID from "#helpers/GenerateUUID";
 import EventEmitter from "events";
+import Env from "commaenv";
 
 export interface Embed {
     CommandName: string;

@@ -1,4 +1,4 @@
-import Env from "#Env";
+import Env from "commaenv";
 
 /**
  * Check if the provided UserID is authorized to use the command.

@@ -1,6 +1,6 @@
 import { REST, Routes } from "discord.js";
 import CommandManager from "#CommandManager";
-import Env from "#Env";
+import Env from "commaenv";
 import "./init.js";
 
 const Rest: REST = new REST({ version: "10" }).setToken(Env.GetVariable("DISCORD_TOKEN"));
