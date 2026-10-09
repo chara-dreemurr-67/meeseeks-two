@@ -87,16 +87,16 @@ Client.on(Events.InteractionCreate, async Interaction => {
     }
 
     if(Command.Cancelable) {
-        const Existing: AbortController | undefined = Command.Pool!.get(Interaction.user.id);
+        const Existing: AbortController | undefined = Command.Cancelable.Pool.get(Interaction.user.id);
         if(Existing) {
             return await Interaction.reply({
-                content: Command.CancelMessage ?? "This command is still running.",
+                content: Command.Cancelable.CancelMessage ?? "This command is still running.",
                 allowedMentions: { repliedUser: false },
                 flags: MessageFlags.Ephemeral
             });
         }
         
-        Command.Pool!.set(Interaction.user.id, new AbortController());
+        Command.Cancelable.Pool.set(Interaction.user.id, new AbortController());
     }
 
     try {
@@ -104,7 +104,7 @@ Client.on(Events.InteractionCreate, async Interaction => {
         await Command.Action(
             Interaction,
             {
-                Signal: Command.Pool?.get(Interaction.user.id)?.signal,
+                Signal: Command.Cancelable?.Pool.get(Interaction.user.id)?.signal,
                 Client: Client
             }
         );
@@ -124,9 +124,7 @@ Client.on(Events.InteractionCreate, async Interaction => {
         });
     }
     finally {
-        if(Command.Cancelable) {
-            Command.Pool!.delete(Interaction.user.id);
-        }
+        Command.Cancelable?.Pool.delete(Interaction.user.id);
         return;
     }
 });

@@ -5,7 +5,7 @@ import {
     MessageFlags,
     SlashCommandBuilder
 } from "discord.js";
-import Command from "#types/Command";
+import Command, { type Cancelable } from "#types/Command";
 import FetchMeeseeksAPI from "#helpers/FetchMeeseeksAPI";
 import timers from "timers/promises";
 
@@ -42,9 +42,10 @@ export default class GetStatistic extends Command {
         )
     ;
 
-    public readonly Cancelable: boolean = true;
-    public readonly Pool: Map<string, AbortController> = new Map();
-    public readonly CancelMessage: string = "Your previous request is still running. Please wait until it finishes.";
+    public readonly Cancelable: Cancelable = {
+        Pool: new Map(),
+        CancelMessage: "Your previous request is still running. Please wait until it finishes."
+    };
     public readonly Cooldowns: Map<string, number> = new Map();
 
     public async LookForPlayer(
