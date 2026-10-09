@@ -6,7 +6,7 @@ import type {
 import { MessageFlags, SlashCommandBuilder } from "discord.js";
 import Command from "#types/Command";
 import CommandManager from "#CommandManager";
-import InteractionRegistry from "../decorators/InteractionRegistry.js";
+import InteractionRegistry from "#decorators/InteractionRegistry";
 import InteractionTypes from "#types/InteractionTypes";
 
 export default class Cancel extends Command {
@@ -42,7 +42,7 @@ export default class Cancel extends Command {
             });
         }
     
-        const Controller: AbortController | undefined = Command.Pool!.get(Interaction.user.id);
+        const Controller: AbortController | undefined = Command.Cancelable.Pool!.get(Interaction.user.id);
     
         if(!Controller) {
             return await Interaction.reply({
@@ -67,7 +67,7 @@ export default class Cancel extends Command {
                 .filter(
                     Command =>
                         Command.Cancelable &&
-                        Command.Pool?.has(Interaction.user.id) &&
+                        Command.Cancelable.Pool.has(Interaction.user.id) &&
                         Command.Command.name.toLowerCase().includes(Interaction.options.getFocused().trim().toLowerCase())
                 )
                 .map(Command => ({ name: Command.Command.name, value: Command.Command.name }))
